@@ -64,7 +64,7 @@ stages:
       params.yaml:
         mlflow:
           tracking_uri: http://13.37.220.20:5000
-          experiment_name: churn-prediction
+          experiment_name: churn-prediction-v1
         train:
           model_type: random_forest
           n_estimators: 100
@@ -77,7 +77,7 @@ stages:
       size: 6209611
     - path: models/run_id.txt
       hash: md5
-      md5: 4af90145bb5f4fd2d3d0f3eab5b49469
+      md5: e01e34bb52bd710d246e9769e8c2cd36
       size: 32
   evaluate:
     cmd: python src/evaluate.py
@@ -96,7 +96,7 @@ stages:
       size: 6209611
     - path: models/run_id.txt
       hash: md5
-      md5: 4af90145bb5f4fd2d3d0f3eab5b49469
+      md5: e01e34bb52bd710d246e9769e8c2cd36
       size: 32
     - path: src/evaluate.py
       hash: md5
@@ -108,7 +108,7 @@ stages:
           threshold: 0.75
         mlflow:
           tracking_uri: http://13.37.220.20:5000
-          experiment_name: churn-prediction
+          experiment_name: churn-prediction-v1
     outs:
     - path: models/metrics.json
       hash: md5
@@ -123,7 +123,7 @@ stages:
       size: 115
     - path: models/run_id.txt
       hash: md5
-      md5: 4af90145bb5f4fd2d3d0f3eab5b49469
+      md5: e01e34bb52bd710d246e9769e8c2cd36
       size: 32
     - path: src/register.py
       hash: md5
@@ -135,4 +135,4 @@ stages:
           threshold: 0.75
         mlflow:
           tracking_uri: http://13.37.220.20:5000
-          experiment_name: churn-prediction
+          experiment_name: churn-prediction-v1
