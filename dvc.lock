@@ -1,0 +1,138 @@
+schema: '2.0'
+stages:
+  preprocess:
+    cmd: python src/preprocess.py
+    deps:
+    - path: data/raw/churn.csv
+      hash: md5
+      md5: 0f9de68e012bd3aed5fa7cdc9fc421af
+      size: 977501
+    - path: src/preprocess.py
+      hash: md5
+      md5: 21d81c68fc057afe3cde176fe2c1a8ca
+      size: 4028
+    params:
+      params.yaml:
+        preprocess:
+          test_size: 0.2
+          random_state: 42
+    outs:
+    - path: data/processed/X_test.csv
+      hash: md5
+      md5: 1a8a9ed1c3899d234f4a236ef91b89c2
+      size: 526673
+    - path: data/processed/X_train.csv
+      hash: md5
+      md5: 70e65fd4390c965e84b060246e0bbf17
+      size: 2104272
+    - path: data/processed/feature_names.pkl
+      hash: md5
+      md5: 27c17f10aea202dffe8121271d1bc949
+      size: 297
+    - path: data/processed/label_encoders.pkl
+      hash: md5
+      md5: 2f8f3680cfbeccec6badad081d2b0d90
+      size: 1569
+    - path: data/processed/scaler.pkl
+      hash: md5
+      md5: db7cc2c025ed8c49aae8af1aee450fb5
+      size: 1274
+    - path: data/processed/y_test.csv
+      hash: md5
+      md5: e958151f165f7f472b725188c9e97a20
+      size: 4234
+    - path: data/processed/y_train.csv
+      hash: md5
+      md5: f597c5156799e0428077438ebc926949
+      size: 16909
+  train:
+    cmd: python src/train.py
+    deps:
+    - path: data/processed/X_train.csv
+      hash: md5
+      md5: 70e65fd4390c965e84b060246e0bbf17
+      size: 2104272
+    - path: data/processed/y_train.csv
+      hash: md5
+      md5: f597c5156799e0428077438ebc926949
+      size: 16909
+    - path: src/train.py
+      hash: md5
+      md5: e6c6f89bc6551c3379e65a7fb2e16fcd
+      size: 3597
+    params:
+      params.yaml:
+        mlflow:
+          tracking_uri: http://13.37.220.20:5000
+          experiment_name: churn-prediction
+        train:
+          model_type: random_forest
+          n_estimators: 100
+          max_depth: 10
+          random_state: 42
+    outs:
+    - path: models/model.pkl
+      hash: md5
+      md5: 38dc3a7cd4d75abffb731c1db6316ab1
+      size: 6209611
+    - path: models/run_id.txt
+      hash: md5
+      md5: 4af90145bb5f4fd2d3d0f3eab5b49469
+      size: 32
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+    - path: data/processed/X_test.csv
+      hash: md5
+      md5: 1a8a9ed1c3899d234f4a236ef91b89c2
+      size: 526673
+    - path: data/processed/y_test.csv
+      hash: md5
+      md5: e958151f165f7f472b725188c9e97a20
+      size: 4234
+    - path: models/model.pkl
+      hash: md5
+      md5: 38dc3a7cd4d75abffb731c1db6316ab1
+      size: 6209611
+    - path: models/run_id.txt
+      hash: md5
+      md5: 4af90145bb5f4fd2d3d0f3eab5b49469
+      size: 32
+    - path: src/evaluate.py
+      hash: md5
+      md5: 6ab512c7430c8cdec23c9e9b3ebda9c7
+      size: 2618
+    params:
+      params.yaml:
+        evaluate:
+          threshold: 0.75
+        mlflow:
+          tracking_uri: http://13.37.220.20:5000
+          experiment_name: churn-prediction
+    outs:
+    - path: models/metrics.json
+      hash: md5
+      md5: d046efc41ff9908f803b4480c089f575
+      size: 115
+  register:
+    cmd: python src/register.py
+    deps:
+    - path: models/metrics.json
+      hash: md5
+      md5: d046efc41ff9908f803b4480c089f575
+      size: 115
+    - path: models/run_id.txt
+      hash: md5
+      md5: 4af90145bb5f4fd2d3d0f3eab5b49469
+      size: 32
+    - path: src/register.py
+      hash: md5
+      md5: b2b392bf2fe68394d6d9cb72e67b5889
+      size: 1803
+    params:
+      params.yaml:
+        evaluate:
+          threshold: 0.75
+        mlflow:
+          tracking_uri: http://13.37.220.20:5000
+          experiment_name: churn-prediction
