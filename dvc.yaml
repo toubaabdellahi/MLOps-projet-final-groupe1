@@ -1,7 +1,7 @@
 # dvc.yaml
 stages:
   preprocess:
-    cmd: python3 src/preprocess.py
+    cmd: python src/preprocess.py
     deps:
       - src/preprocess.py
       - data/raw/churn.csv
@@ -17,7 +17,7 @@ stages:
       - data/processed/feature_names.pkl
 
   train:
-    cmd: python3 src/train.py
+    cmd: python src/train.py
     deps:
       - src/train.py
       - data/processed/X_train.csv
@@ -30,7 +30,7 @@ stages:
       - models/run_id.txt
 
   evaluate:
-    cmd: python3 src/evaluate.py
+    cmd: python src/evaluate.py
     deps:
       - src/evaluate.py
       - data/processed/X_test.csv
@@ -44,7 +44,7 @@ stages:
       - models/metrics.json
 
   register:
-    cmd: python3 src/register.py
+    cmd: python src/register.py
     deps:
       - src/register.py
       - models/metrics.json
