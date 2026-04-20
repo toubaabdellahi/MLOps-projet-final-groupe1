@@ -108,6 +108,28 @@ def main():
     print(f"\n✅ Preprocessing terminé !")
     print(f"   Features : {len(feature_names)}")
     print(f"   Fichiers sauvegardés dans data/processed/")
-
+    # ============================
+    # UPLOAD VERS S3
+    # ============================
+    import boto3
+    
+    s3 = boto3.client("s3")
+    bucket = params["aws"]["bucket_name"]
+    
+    processed_files = [
+        "data/processed/X_train.csv",
+        "data/processed/X_test.csv",
+        "data/processed/y_train.csv",
+        "data/processed/y_test.csv",
+        "data/processed/scaler.pkl",
+        "data/processed/label_encoders.pkl",
+        "data/processed/feature_names.pkl"
+    ]
+    
+    print("☁️ Upload des données preprocessées vers S3...")
+    for filepath in processed_files:
+        s3_key = filepath  # garde le même chemin sur S3
+        s3.upload_file(filepath, bucket, s3_key)
+        print(f"   ✓ {filepath} → s3://{bucket}/{s3_key}")
 if __name__ == "__main__":
     main()
