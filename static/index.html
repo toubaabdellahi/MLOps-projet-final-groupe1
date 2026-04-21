@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Churn Prediction — MLOps Groupe 1</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; color: #2d3748; }
+    header {
+      background: linear-gradient(135deg, #1a365d, #2b6cb0);
+      color: white; padding: 24px 32px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    header h1 { font-size: 1.6rem; font-weight: 700; }
+    header p { font-size: 0.9rem; opacity: 0.85; margin-top: 4px; }
+    .container { max-width: 960px; margin: 32px auto; padding: 0 16px; }
+    .card {
+      background: white; border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.08); padding: 28px;
+      margin-bottom: 24px;
+    }
+    .card h2 { font-size: 1.1rem; color: #1a365d; margin-bottom: 20px; border-bottom: 2px solid #ebf4ff; padding-bottom: 10px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .field label { display: block; font-size: 0.8rem; font-weight: 600; color: #4a5568; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
+    .field input, .field select {
+      width: 100%; padding: 9px 12px;
+      border: 1.5px solid #cbd5e0; border-radius: 7px;
+      font-size: 0.95rem; color: #2d3748;
+      transition: border-color .2s;
+    }
+    .field input:focus, .field select:focus { outline: none; border-color: #4299e1; }
+    .btn-predict {
+      display: block; width: 100%; margin-top: 8px;
+      padding: 14px; background: #2b6cb0; color: white;
+      border: none; border-radius: 8px; font-size: 1rem;
+      font-weight: 700; cursor: pointer; transition: background .2s;
+    }
+    .btn-predict:hover { background: #1a365d; }
+    .btn-predict:disabled { background: #a0aec0; cursor: not-allowed; }
+    #result { display: none; }
+    .result-churn { background: #fff5f5; border-left: 5px solid #e53e3e; }
+    .result-nochurn { background: #f0fff4; border-left: 5px solid #38a169; }
+    .result-label { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; }
+    .churn-color { color: #e53e3e; }
+    .nochurn-color { color: #38a169; }
+    .prob-bar { margin-top: 16px; }
+    .prob-bar label { font-size: 0.85rem; color: #718096; }
+    .bar-track { background: #e2e8f0; border-radius: 99px; height: 12px; margin-top: 6px; margin-bottom: 10px; }
+    .bar-fill { height: 100%; border-radius: 99px; transition: width .6s ease; }
+    .bar-churn { background: #e53e3e; }
+    .bar-nochurn { background: #38a169; }
+    .error-box { background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px; padding: 14px; color: #c53030; }
+    .spinner { display: none; text-align: center; padding: 20px; color: #718096; }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Churn Prediction</h1>
+    <p>MLOps II — SupNum DEML M2 | Groupe 1</p>
+  </div>
+</header>
+
+<div class="container">
+  <div class="card">
+    <h2>Informations Client</h2>
+    <form id="predictForm">
+      <div class="grid">
+
+        <div class="field">
+          <label>Genre</label>
+          <select name="gender"><option>Male</option><option>Female</option></select>
+        </div>
+
+        <div class="field">
+          <label>Senior Citizen</label>
+          <select name="SeniorCitizen"><option value="0">Non (0)</option><option value="1">Oui (1)</option></select>
+        </div>
+
+        <div class="field">
+          <label>Partenaire</label>
+          <select name="Partner"><option>Yes</option><option>No</option></select>
+        </div>
+
+        <div class="field">
+          <label>Dépendants</label>
+          <select name="Dependents"><option>Yes</option><option>No</option></select>
+        </div>
+
+        <div class="field">
+          <label>Ancienneté (mois)</label>
+          <input type="number" name="tenure" value="12" min="0" max="120" />
+        </div>
+
+        <div class="field">
+          <label>Service Téléphonique</label>
+          <select name="PhoneService"><option>Yes</option><option>No</option></select>
+        </div>
+
+        <div class="field">
+          <label>Lignes Multiples</label>
+          <select name="MultipleLines">
+            <option>No</option><option>Yes</option><option>No phone service</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Service Internet</label>
+          <select name="InternetService"><option>DSL</option><option>Fiber optic</option><option>No</option></select>
+        </div>
+
+        <div class="field">
+          <label>Sécurité En Ligne</label>
+          <select name="OnlineSecurity"><option>No</option><option>Yes</option><option>No internet service</option></select>
+        </div>
+
+        <div class="field">
+          <label>Sauvegarde En Ligne</label>
+          <select name="OnlineBackup"><option>No</option><option>Yes</option><option>No internet service</option></select>
+        </div>
+
+        <div class="field">
+          <label>Protection Appareil</label>
+          <select name="DeviceProtection"><option>No</option><option>Yes</option><option>No internet service</option></select>
+        </div>
+
+        <div class="field">
+          <label>Support Technique</label>
+          <select name="TechSupport"><option>No</option><option>Yes</option><option>No internet service</option></select>
+        </div>
+
+        <div class="field">
+          <label>Streaming TV</label>
+          <select name="StreamingTV"><option>No</option><option>Yes</option><option>No internet service</option></select>
+        </div>
+
+        <div class="field">
+          <label>Streaming Films</label>
+          <select name="StreamingMovies"><option>No</option><option>Yes</option><option>No internet service</option></select>
+        </div>
+
+        <div class="field">
+          <label>Type de Contrat</label>
+          <select name="Contract">
+            <option>Month-to-month</option><option>One year</option><option>Two year</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Facturation Sans Papier</label>
+          <select name="PaperlessBilling"><option>Yes</option><option>No</option></select>
+        </div>
+
+        <div class="field">
+          <label>Mode de Paiement</label>
+          <select name="PaymentMethod">
+            <option>Electronic check</option>
+            <option>Mailed check</option>
+            <option>Bank transfer (automatic)</option>
+            <option>Credit card (automatic)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Charges Mensuelles ($)</label>
+          <input type="number" name="MonthlyCharges" value="65.0" step="0.01" min="0" />
+        </div>
+
+        <div class="field">
+          <label>Charges Totales ($)</label>
+          <input type="number" name="TotalCharges" value="780.0" step="0.01" min="0" />
+        </div>
+
+      </div>
+
+      <div style="margin-top: 24px;">
+        <button type="submit" class="btn-predict" id="submitBtn">Prédire le Churn</button>
+      </div>
+    </form>
+
+    <div class="spinner" id="spinner">Analyse en cours...</div>
+  </div>
+
+  <div class="card" id="result">
+    <h2>Résultat de la Prédiction</h2>
+    <div id="resultContent"></div>
+  </div>
+
+  <div id="errorBox"></div>
+</div>
+
+<script>
+  document.getElementById('predictForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    const spinner = document.getElementById('spinner');
+    const resultDiv = document.getElementById('result');
+    const resultContent = document.getElementById('resultContent');
+    const errorBox = document.getElementById('errorBox');
+
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    resultDiv.style.display = 'none';
+    errorBox.innerHTML = '';
+
+    const form = e.target;
+    const payload = {
+      gender: form.gender.value,
+      SeniorCitizen: parseInt(form.SeniorCitizen.value),
+      Partner: form.Partner.value,
+      Dependents: form.Dependents.value,
+      tenure: parseInt(form.tenure.value),
+      PhoneService: form.PhoneService.value,
+      MultipleLines: form.MultipleLines.value,
+      InternetService: form.InternetService.value,
+      OnlineSecurity: form.OnlineSecurity.value,
+      OnlineBackup: form.OnlineBackup.value,
+      DeviceProtection: form.DeviceProtection.value,
+      TechSupport: form.TechSupport.value,
+      StreamingTV: form.StreamingTV.value,
+      StreamingMovies: form.StreamingMovies.value,
+      Contract: form.Contract.value,
+      PaperlessBilling: form.PaperlessBilling.value,
+      PaymentMethod: form.PaymentMethod.value,
+      MonthlyCharges: parseFloat(form.MonthlyCharges.value),
+      TotalCharges: parseFloat(form.TotalCharges.value),
+    };
+
+    try {
+      const resp = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.detail || `HTTP ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      const isChurn = data.prediction === 1;
+      const pctChurn = (data.probability_churn * 100).toFixed(1);
+      const pctNo = (data.probability_no_churn * 100).toFixed(1);
+
+      resultDiv.className = `card ${isChurn ? 'result-churn' : 'result-nochurn'}`;
+      resultContent.innerHTML = `
+        <div class="result-label ${isChurn ? 'churn-color' : 'nochurn-color'}">
+          ${isChurn ? '⚠ Risque de Churn' : '✅ Pas de Churn'}
+        </div>
+        <p style="color:#718096;font-size:.9rem">
+          Le modèle prédit que ce client <strong>${isChurn ? 'va quitter' : 'va rester'}</strong>.
+        </p>
+        <div class="prob-bar">
+          <label>Probabilité Churn: <strong>${pctChurn}%</strong></label>
+          <div class="bar-track"><div class="bar-fill bar-churn" style="width:${pctChurn}%"></div></div>
+          <label>Probabilité No Churn: <strong>${pctNo}%</strong></label>
+          <div class="bar-track"><div class="bar-fill bar-nochurn" style="width:${pctNo}%"></div></div>
+        </div>`;
+
+      resultDiv.style.display = 'block';
+    } catch (err) {
+      errorBox.innerHTML = `<div class="error-box">Erreur: ${err.message}</div>`;
+    } finally {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+    }
+  });
+</script>
+</body>
+</html>
