@@ -373,6 +373,22 @@
 
     .empty-history { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.83rem; }
 
+    /* ── EXPORT BUTTON ── */
+    .btn-export {
+      padding: 6px 12px; border-radius: var(--radius-sm);
+      font-size: 0.75rem; font-weight: 600; cursor: pointer;
+      border: 1.5px solid rgba(99,102,241,0.4);
+      background: rgba(99,102,241,0.1); color: #a5b4fc;
+      font-family: inherit; transition: all 0.15s; white-space: nowrap;
+    }
+
+    .btn-export:hover:not(:disabled) {
+      background: rgba(99,102,241,0.2);
+      border-color: var(--primary);
+    }
+
+    .btn-export:disabled { opacity: 0.35; cursor: not-allowed; }
+
     /* ── PROGRESS DOTS ── */
     .progress-dots { display: flex; gap: 6px; justify-content: center; margin-top: 16px; }
 
@@ -743,10 +759,13 @@
     <div class="card">
       <div class="card-header">
         <div class="card-icon icon-blue">🕑</div>
-        <div>
+        <div style="flex:1;">
           <div class="card-title">Historique</div>
-          <div class="card-subtitle">Session en cours</div>
+          <div class="card-subtitle" id="historyCount">Session en cours</div>
         </div>
+        <button type="button" class="btn-export" id="exportBtn" onclick="exportCSV()" disabled>
+          ⬇ CSV
+        </button>
       </div>
       <div class="card-body" style="padding:16px;">
         <div class="history-list" id="historyList">
@@ -928,29 +947,79 @@
 
     document.getElementById('resultTime').textContent = new Date().toLocaleTimeString('fr-FR');
 
-    predictions.unshift({ isChurn, pC, pN, time: new Date().toLocaleTimeString('fr-FR'), contract: payload.Contract });
+    predictions.unshift({
+      isChurn, pC, pN,
+      time: new Date().toLocaleTimeString('fr-FR'),
+      date: new Date().toLocaleDateString('fr-FR'),
+      payload
+    });
     renderHistory();
   }
 
   function renderHistory() {
-    const list = document.getElementById('historyList');
+    const list  = document.getElementById('historyList');
+    const count = document.getElementById('historyCount');
+    const btn   = document.getElementById('exportBtn');
+
     if (!predictions.length) {
       list.innerHTML = '<div class="empty-history">Aucune prédiction effectuée</div>';
+      count.textContent = 'Session en cours';
+      btn.disabled = true;
       return;
     }
-    list.innerHTML = predictions.slice(0, 8).map(h => `
+
+    count.textContent = `${predictions.length} prédiction${predictions.length > 1 ? 's' : ''}`;
+    btn.disabled = false;
+
+    list.innerHTML = predictions.slice(0, 8).map((h, i) => `
       <div class="history-item">
         <div class="history-info">
           <div class="history-pred ${h.isChurn ? 'churn' : 'no-churn'}">
             ${h.isChurn ? '⚠ Résiliation' : '✓ Fidèle'}
           </div>
-          <div class="history-time">${h.time} — ${h.contract}</div>
+          <div class="history-time">${h.time} — ${h.payload.Contract}</div>
         </div>
         <div class="history-prob ${h.isChurn ? 'churn' : 'no-churn'}">
           ${h.isChurn ? h.pC : h.pN}%
         </div>
       </div>
     `).join('');
+  }
+
+  function exportCSV() {
+    if (!predictions.length) return;
+
+    const headers = [
+      'Date','Heure','Prediction','Proba_Churn_%','Proba_Fidelite_%',
+      'gender','SeniorCitizen','Partner','Dependents','tenure',
+      'PhoneService','MultipleLines','InternetService',
+      'OnlineSecurity','OnlineBackup','DeviceProtection','TechSupport',
+      'StreamingTV','StreamingMovies','Contract','PaperlessBilling',
+      'PaymentMethod','MonthlyCharges','TotalCharges'
+    ];
+
+    const rows = predictions.map(h => {
+      const p = h.payload;
+      return [
+        h.date, h.time,
+        h.isChurn ? 'Churn' : 'No Churn',
+        h.pC, h.pN,
+        p.gender, p.SeniorCitizen, p.Partner, p.Dependents, p.tenure,
+        p.PhoneService, p.MultipleLines, p.InternetService,
+        p.OnlineSecurity, p.OnlineBackup, p.DeviceProtection, p.TechSupport,
+        p.StreamingTV, p.StreamingMovies, p.Contract, p.PaperlessBilling,
+        `"${p.PaymentMethod}"`, p.MonthlyCharges, p.TotalCharges
+      ].join(',');
+    });
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `churnai_predictions_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function resetForm() {
