@@ -1,0 +1,86 @@
+name: Deploy API (PRO)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+
+            echo "===== DEPLOY START $(date) ====="
+
+            # 📌 Variables
+            export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            export AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}
+            export MLFLOW_TRACKING_URI=${{ secrets.MLFLOW_TRACKING_URI }}
+
+            # 📌 MLflow (ne pas relancer si déjà actif)
+            if ! pgrep -f "mlflow server" > /dev/null; then
+              echo "Starting MLflow..."
+              nohup mlflow server \
+                --host 0.0.0.0 \
+                --port 5000 \
+                --default-artifact-root ${{ secrets.S3_BUCKET }}/mlflow-artifacts/ \
+                > ~/mlflow.log 2>&1 &
+            else
+              echo "MLflow already running"
+            fi
+
+            # 📌 Code
+            cd ~/mlops-churn-prediction
+            git pull origin main
+
+            # 📌 Nettoyage propre
+            docker rm -f api_container 2>/dev/null || true
+            sudo fuser -k 8000/tcp || true
+
+            # 📌 Build
+            docker build -t mlflow-model-api .
+
+            # 📌 Run
+            docker run -d \
+              --name api_container \
+              --restart unless-stopped \
+              -p 8000:8000 \
+              -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+              -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+              -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
+              -e MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_URI \
+              mlflow-model-api
+
+            echo "===== DEPLOY DONE ====="
+
+      - name: Health Check
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+
+            echo "Checking API..."
+
+            for i in {1..10}; do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000)
+              if [ "$STATUS" -eq 200 ]; then
+                echo "API OK"
+                exit 0
+              fi
+              sleep 5
+            done
+
+            echo "API FAILED"
+            docker logs api_container --tail 50
+            exit 1
