@@ -1,1 +1,25 @@
+# Environnement et secrets — jamais sur git
+.env
+*.pem
+*.key
 params.yaml
+
+# Données et modèles — gérés par DVC
+data/
+models/
+mlruns/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
