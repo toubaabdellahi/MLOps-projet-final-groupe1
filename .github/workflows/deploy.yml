@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+    workflow_dispatch:
 
 jobs:
   deploy:
@@ -39,7 +40,7 @@ jobs:
             fi
 
             # 📌 Code
-            cd ~/mlops-churn-prediction
+            cd ~/mlops-churn-prediction/MLOps-projet-final-groupe1
             git pull origin main
 
             # 📌 Nettoyage propre
