@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import mlflow
 import mlflow.sklearn
+from typing import Literal
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
@@ -65,23 +66,26 @@ def startup():
 
 
 class CustomerFeatures(BaseModel):
-    gender: str
-    SeniorCitizen: int
-    Partner: str
-    Dependents: str
+    gender: Literal["Male", "Female"]
+    SeniorCitizen: Literal[0, 1]
+    Partner: Literal["Yes", "No"]
+    Dependents: Literal["Yes", "No"]
     tenure: int
-    PhoneService: str
-    MultipleLines: str
-    InternetService: str
-    OnlineSecurity: str
-    OnlineBackup: str
-    DeviceProtection: str
-    TechSupport: str
-    StreamingTV: str
-    StreamingMovies: str
-    Contract: str
-    PaperlessBilling: str
-    PaymentMethod: str
+    PhoneService: Literal["Yes", "No"]
+    MultipleLines: Literal["Yes", "No", "No phone service"]
+    InternetService: Literal["DSL", "Fiber optic", "No"]
+    OnlineSecurity: Literal["Yes", "No", "No internet service"]
+    OnlineBackup: Literal["Yes", "No", "No internet service"]
+    DeviceProtection: Literal["Yes", "No", "No internet service"]
+    TechSupport: Literal["Yes", "No", "No internet service"]
+    StreamingTV: Literal["Yes", "No", "No internet service"]
+    StreamingMovies: Literal["Yes", "No", "No internet service"]
+    Contract: Literal["Month-to-month", "One year", "Two year"]
+    PaperlessBilling: Literal["Yes", "No"]
+    PaymentMethod: Literal[
+        "Electronic check", "Mailed check",
+        "Bank transfer (automatic)", "Credit card (automatic)"
+    ]
     MonthlyCharges: float
     TotalCharges: float
 
@@ -108,6 +112,31 @@ def health_check():
 def ui():
     with open("static/index.html", encoding="utf-8") as f:
         return f.read()
+
+
+@app.get("/model/info", summary="Current model info from MLflow Registry")
+def model_info():
+    if _model is None:
+        raise HTTPException(status_code=503, detail="Model not loaded yet")
+    try:
+        client = mlflow.MlflowClient(tracking_uri=MLFLOW_TRACKING_URI)
+        versions = client.get_latest_versions(MODEL_NAME, stages=[MODEL_STAGE])
+        if not versions:
+            raise HTTPException(status_code=404, detail="No model in Production stage")
+        v = versions[0]
+        run = client.get_run(v.run_id)
+        return {
+            "model_name": MODEL_NAME,
+            "version": v.version,
+            "stage": MODEL_STAGE,
+            "run_id": v.run_id,
+            "metrics": run.data.metrics,
+            "params": run.data.params,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/reload", summary="Reload model from MLflow Registry")
