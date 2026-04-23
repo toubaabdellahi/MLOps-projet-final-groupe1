@@ -7,7 +7,6 @@ on:
       - "**.dvc"
       - "dvc.lock"
     branches:
-      - main
       - main-test
   schedule:
     - cron: "0 0 * * 0"
