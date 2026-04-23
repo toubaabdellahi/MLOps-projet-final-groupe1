@@ -41,7 +41,12 @@ jobs:
 
             # 📌 Code
             cd ~/mlops-churn-prediction/MLOps-projet-final-groupe1
+            git fetch origin
+            git checkout main-test
             git pull origin main-test
+
+            # 📌 Artifacts DVC (pkl non versionnés par git)
+            dvc pull data/processed/ || echo "DVC pull skipped"
 
             # 📌 Nettoyage propre
             docker rm -f api_container 2>/dev/null || true
