@@ -50,8 +50,8 @@ jobs:
             # 📌 Code
             cd ~/mlops-churn-prediction/MLOps-projet-final-groupe1
             git fetch origin
-            git checkout main
-            git pull origin main
+            git checkout main-test
+            git pull origin main-test
 
             # 📌 params.yaml requis par dvc repro (non versionné git)
             if [ ! -f params.yaml ]; then
