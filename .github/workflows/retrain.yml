@@ -58,6 +58,10 @@ jobs:
               exit 1
             fi
 
+            # 📌 Données brutes depuis S3
+            mkdir -p data/raw data/processed
+            aws s3 cp s3://mlops-churn-groupe-1/data/raw/churn.csv data/raw/churn.csv
+
             # 📌 DVC
             echo "DVC pull..."
             dvc pull || true
