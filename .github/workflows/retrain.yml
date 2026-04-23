@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - '**.dvc'
-      - 'dvc.lock'
+      - "**.dvc"
+      - "dvc.lock"
     branches:
       - main
       - main-test
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: "0 0 * * 0"
 
 jobs:
   retrain:
@@ -64,7 +64,7 @@ jobs:
             dvc pull || true
 
             echo "DVC repro..."
-            dvc repro
+            dvc repro --force
 
             echo "DVC push..."
             dvc push
