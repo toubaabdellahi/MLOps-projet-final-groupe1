@@ -41,13 +41,22 @@ jobs:
                 --port 5000 \
                 --default-artifact-root ${{ secrets.S3_BUCKET }}/mlflow-artifacts/ \
                 > ~/mlflow.log 2>&1 &
+              sleep 8
             else
               echo "MLflow already running"
             fi
 
             # 📌 Code
             cd ~/mlops-churn-prediction/MLOps-projet-final-groupe1
+            git fetch origin
+            git checkout main
             git pull origin main
+
+            # 📌 params.yaml requis par dvc repro (non versionné git)
+            if [ ! -f params.yaml ]; then
+              echo "ERROR: params.yaml manquant sur EC2 !"
+              exit 1
+            fi
 
             # 📌 DVC
             echo "DVC pull..."
