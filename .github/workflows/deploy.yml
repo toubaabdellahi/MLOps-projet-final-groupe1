@@ -48,9 +48,9 @@ jobs:
             # 📌 Artifacts DVC (pkl non versionnés par git)
             dvc pull data/processed/ || echo "DVC pull skipped"
 
-            # 📌 Nettoyage propre
-            docker rm -f api_container 2>/dev/null || true
-            sudo fuser -k 8000/tcp || true
+            # 📌 Nettoyage propre (tous les containers sur port 8000)
+            docker rm -f api_container churn-api 2>/dev/null || true
+            docker stop $(docker ps -q --filter "publish=8000") 2>/dev/null || true
 
             # 📌 Build
             docker build -t mlflow-model-api .
