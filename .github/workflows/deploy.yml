@@ -3,7 +3,7 @@ name: Deploy API (PRO)
 on:
   push:
     branches:
-      - main
+      - main-test
     workflow_dispatch:
 
 jobs:
@@ -41,7 +41,7 @@ jobs:
 
             # 📌 Code
             cd ~/mlops-churn-prediction/MLOps-projet-final-groupe1
-            git pull origin main
+            git pull origin main-test
 
             # 📌 Nettoyage propre
             docker rm -f api_container 2>/dev/null || true
