@@ -3,9 +3,9 @@ name: Retrain & Deploy (PRO)
 on:
   workflow_dispatch:
   push:
-    paths:
-      - "**.dvc"
-      - "dvc.lock"
+    # paths:
+    #   - "**.dvc"
+    #   - "dvc.lock"
     branches:
       - main-test
   schedule:
