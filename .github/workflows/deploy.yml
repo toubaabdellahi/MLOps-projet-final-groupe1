@@ -39,11 +39,11 @@ jobs:
               echo "MLflow already running"
             fi
 
-            # 📌 Code
+            # 📌 Code (depuis staging qui contient tout le code)
             cd ~/mlops-churn-prediction/MLOps-projet-final-groupe1
             git fetch origin
-            git checkout main
-            git pull origin main
+            git checkout staging
+            git pull origin staging
 
             # 📌 Artifacts DVC (pkl non versionnés par git)
             dvc pull data/processed/ || echo "DVC pull skipped"

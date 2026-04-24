@@ -1,5 +1,0 @@
-nohup: ignoring input
-Usage: mlflow server [OPTIONS]
-Try 'mlflow server --help' for help.
-
-Error: No such option: --cors-allowed-origins
