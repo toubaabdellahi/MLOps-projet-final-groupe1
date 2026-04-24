@@ -7,7 +7,7 @@ on:
     #   - "**.dvc"
     #   - "dvc.lock"
     branches:
-      - main-test
+      - main
   schedule:
     - cron: "0 0 * * 0"
 
@@ -50,8 +50,8 @@ jobs:
             # 📌 Code
             cd ~/mlops-churn-prediction/MLOps-projet-final-groupe1
             git fetch origin
-            git checkout main-test
-            git pull origin main-test
+            git checkout main
+            git pull origin main
 
             # 📌 params.yaml requis par dvc repro (non versionné git)
             if [ ! -f params.yaml ]; then

@@ -3,7 +3,7 @@ name: Deploy API (PRO)
 on:
   push:
     branches:
-      - main-test
+      - main
   workflow_dispatch:
 
 jobs:
@@ -42,8 +42,8 @@ jobs:
             # 📌 Code
             cd ~/mlops-churn-prediction/MLOps-projet-final-groupe1
             git fetch origin
-            git checkout main-test
-            git pull origin main-test
+            git checkout main
+            git pull origin main
 
             # 📌 Artifacts DVC (pkl non versionnés par git)
             dvc pull data/processed/ || echo "DVC pull skipped"
