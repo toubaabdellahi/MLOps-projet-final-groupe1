@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChurnAI — Prédiction de Résiliation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #e0e7ff;
+      --danger: #ef4444;
+      --danger-light: #fef2f2;
+      --success: #10b981;
+      --success-light: #ecfdf5;
+      --warning: #f59e0b;
+      --bg: #0f172a;
+      --bg-card: #1e293b;
+      --bg-input: #0f172a;
+      --border: #334155;
+      --border-focus: #6366f1;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-label: #cbd5e1;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+      border-bottom: 1px solid rgba(99,102,241,0.3);
+      padding: 0 32px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 12px; }
+
+    .logo {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 800; color: white; letter-spacing: -1px;
+    }
+
+    .brand { font-size: 1.2rem; font-weight: 700; color: white; }
+    .brand span { color: #a5b4fc; }
+
+    .header-badge {
+      background: rgba(99,102,241,0.2);
+      border: 1px solid rgba(99,102,241,0.4);
+      color: #a5b4fc;
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .model-status { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+      max-width: 1200px;
+      margin: 32px auto;
+      padding: 0 24px;
+    }
+
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .card-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+
+    .icon-purple { background: rgba(99,102,241,0.15); }
+    .icon-blue   { background: rgba(59,130,246,0.15); }
+    .icon-green  { background: rgba(16,185,129,0.15); }
+    .icon-orange { background: rgba(245,158,11,0.15); }
+
+    .card-title    { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+    .card-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+    .card-body     { padding: 24px; }
+
+    /* ── STEPS ── */
+    .steps {
+      display: flex; align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+
+    .step {
+      display: flex; align-items: center; gap: 10px;
+      flex: 1; cursor: pointer;
+      opacity: 0.4; transition: opacity 0.2s;
+    }
+
+    .step.active { opacity: 1; }
+    .step.done   { opacity: 0.75; }
+
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .step.active .step-num { background: var(--primary); border-color: var(--primary); color: white; }
+    .step.done   .step-num { background: var(--success); border-color: var(--success); color: white; }
+
+    .step-label { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
+    .step.active .step-label { color: var(--text); }
+
+    .step-divider { height: 2px; flex: 1; background: var(--border); margin: 0 8px; max-width: 40px; }
+
+    /* ── FORM SECTIONS ── */
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+
+    .section-title {
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--primary); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .section-title::after { content: ''; flex: 1; height: 1px; background: rgba(99,102,241,0.2); }
+
+    .fields-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px; margin-bottom: 24px;
+    }
+
+    /* ── FIELD ── */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    .field label {
+      font-size: 0.78rem; font-weight: 500; color: var(--text-label);
+    }
+
+    .field input,
+    .field select {
+      background: var(--bg-input);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      color: var(--text); font-size: 0.9rem; font-family: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      outline: none; width: 100%;
+      -webkit-appearance: none; appearance: none;
+    }
+
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+
+    .field input:focus,
+    .field select:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+
+    input[type="range"] {
+      -webkit-appearance: auto; appearance: auto;
+      height: 6px; accent-color: var(--primary); cursor: pointer;
+      background: transparent; border: none; padding: 0;
+      box-shadow: none;
+    }
+
+    /* ── NAV BUTTONS ── */
+    .nav-btns {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 24px; padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn {
+      padding: 10px 22px; border-radius: var(--radius-sm);
+      font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none;
+      transition: all 0.15s; display: flex; align-items: center; gap: 8px;
+      font-family: inherit;
+    }
+
+    .btn-ghost {
+      background: transparent; border: 1.5px solid var(--border); color: var(--text-muted);
+    }
+
+    .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+
+    .btn-predict {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white; padding: 13px 28px; font-size: 0.95rem;
+      border-radius: var(--radius-sm);
+      box-shadow: 0 4px 15px rgba(99,102,241,0.35);
+    }
+
+    .btn-predict:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.45); }
+    .btn-predict:disabled { transform: none; box-shadow: none; background: #374151; color: var(--text-muted); cursor: not-allowed; }
+
+    /* ── SIDEBAR ── */
+    .sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+    #resultCard { display: none; }
+
+    /* ── RESULT ── */
+    .result-banner {
+      padding: 22px; text-align: center;
+      border-radius: var(--radius-sm); margin-bottom: 20px;
+    }
+
+    .result-banner.churn    { background: rgba(239,68,68,0.08);  border: 1px solid rgba(239,68,68,0.25); }
+    .result-banner.no-churn { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); }
+
+    .result-icon    { font-size: 2.6rem; margin-bottom: 10px; }
+    .result-verdict { font-size: 1.25rem; font-weight: 800; margin-bottom: 6px; }
+    .result-verdict.churn    { color: #f87171; }
+    .result-verdict.no-churn { color: #34d399; }
+    .result-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.55; }
+
+    /* ── RISK METER ── */
+    .risk-meter {
+      margin: 16px 0; padding: 14px;
+      background: var(--bg-input);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .risk-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; font-weight: 500; }
+
+    .risk-bar-container { position: relative; }
+
+    .risk-track {
+      height: 10px; border-radius: 99px;
+      background: linear-gradient(90deg, #10b981 0%, #f59e0b 50%, #ef4444 100%);
+      margin-bottom: 8px;
+    }
+
+    .risk-pointer {
+      position: absolute; top: -4px;
+      width: 18px; height: 18px;
+      background: white; border: 2px solid #6366f1;
+      border-radius: 50%;
+      transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateX(-50%);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    .risk-levels { display: flex; justify-content: space-between; }
+    .risk-levels span { font-size: 0.67rem; color: var(--text-muted); }
+
+    /* ── PROB BARS ── */
+    .prob-item { margin-bottom: 14px; }
+
+    .prob-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .prob-label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+    .prob-value { font-size: 0.9rem; font-weight: 700; }
+    .prob-value.danger  { color: #f87171; }
+    .prob-value.success { color: #34d399; }
+
+    .bar-track { background: var(--bg-input); border-radius: 99px; height: 8px; overflow: hidden; border: 1px solid var(--border); }
+
+    .bar-fill { height: 100%; border-radius: 99px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); width: 0; }
+    .bar-danger  { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .bar-success { background: linear-gradient(90deg, #10b981, #34d399); }
+
+    /* ── SPINNER ── */
+    .spinner-wrap {
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 36px; gap: 14px;
+    }
+
+    .spinner {
+      width: 38px; height: 38px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-text { font-size: 0.83rem; color: var(--text-muted); }
+
+    /* ── ERROR ── */
+    .error-box {
+      background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25);
+      border-radius: var(--radius-sm); padding: 12px 14px;
+      color: #fca5a5; font-size: 0.84rem; margin-bottom: 12px;
+    }
+
+    /* ── INFO CARD ── */
+    .info-card {
+      background: rgba(99,102,241,0.06);
+      border: 1px solid rgba(99,102,241,0.2);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+    }
+
+    .info-card-title { font-size: 0.78rem; font-weight: 600; color: #a5b4fc; margin-bottom: 6px; }
+    .info-card p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── HISTORY ── */
+    .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; }
+
+    .history-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .history-item:hover { border-color: var(--primary); }
+
+    .history-info { display: flex; flex-direction: column; gap: 2px; }
+    .history-time { font-size: 0.7rem; color: var(--text-muted); }
+    .history-pred { font-size: 0.82rem; font-weight: 600; }
+    .history-pred.churn    { color: #f87171; }
+    .history-pred.no-churn { color: #34d399; }
+
+    .history-prob {
+      font-size: 0.8rem; font-weight: 700; padding: 3px 8px; border-radius: 99px;
+    }
+
+    .history-prob.churn    { background: rgba(239,68,68,0.1);  color: #f87171; }
+    .history-prob.no-churn { background: rgba(16,185,129,0.1); color: #34d399; }
+
+    .empty-history { text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.83rem; }
+
+    /* ── EXPORT BUTTON ── */
+    .btn-export {
+      padding: 6px 12px; border-radius: var(--radius-sm);
+      font-size: 0.75rem; font-weight: 600; cursor: pointer;
+      border: 1.5px solid rgba(99,102,241,0.4);
+      background: rgba(99,102,241,0.1); color: #a5b4fc;
+      font-family: inherit; transition: all 0.15s; white-space: nowrap;
+    }
+
+    .btn-export:hover:not(:disabled) {
+      background: rgba(99,102,241,0.2);
+      border-color: var(--primary);
+    }
+
+    .btn-export:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ── PROGRESS DOTS ── */
+    .progress-dots { display: flex; gap: 6px; justify-content: center; margin-top: 16px; }
+
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: all 0.2s; }
+    .dot.active { background: var(--primary); transform: scale(1.4); }
+    .dot.done   { background: var(--success); }
+
+    /* ── STATUS DOT ── */
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .dot-green { background: var(--success); box-shadow: 0 0 6px var(--success); }
+    .dot-red   { background: var(--danger);  box-shadow: 0 0 6px var(--danger); }
+    .dot-gray  { background: var(--text-muted); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  </style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="header-left">
+    <div class="logo">CA</div>
+    <div>
+      <div class="brand">Churn<span>AI</span></div>
+      <div style="font-size:0.68rem;color:#94a3b8;margin-top:1px;">MLOps II — SupNum DEML M2 | Groupe 1</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="model-status" id="modelStatus">
+      <span class="status-dot dot-gray"></span>
+      <span>Connexion...</span>
+    </div>
+    <div class="header-badge">Random Forest</div>
+  </div>
+</header>
+
+<!-- ══ MAIN LAYOUT ══ -->
+<div class="layout">
+
+  <!-- ══ LEFT — FORM ══ -->
+  <div>
+
+    <!-- Step indicator -->
+    <div class="steps">
+      <div class="step active" id="step-tab-1" onclick="goToStep(1)">
+        <div class="step-num">1</div>
+        <div class="step-label">Profil Client</div>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step" id="step-tab-2" onclick="goToStep(2)">
+        <div class="step-num">2</div>
+        <div class="step-label">Services</div>
+      </div>
+      <div class="step-divider"></div>
+      <div class="step" id="step-tab-3" onclick="goToStep(3)">
+        <div class="step-num">3</div>
+        <div class="step-label">Contrat & Paiement</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <form id="predictForm" novalidate>
+
+        <!-- ── STEP 1 ── -->
+        <div class="form-section active" id="section-1">
+          <div class="card-header">
+            <div class="card-icon icon-purple">👤</div>
+            <div>
+              <div class="card-title">Profil Démographique</div>
+              <div class="card-subtitle">Informations personnelles du client</div>
+            </div>
+          </div>
+          <div class="card-body">
+
+            <div class="section-title">Identité</div>
+            <div class="fields-grid">
+              <div class="field">
+                <label>Genre</label>
+                <select name="gender">
+                  <option value="Male">Homme</option>
+                  <option value="Female">Femme</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Tranche d'âge</label>
+                <select name="SeniorCitizen">
+                  <option value="0">Moins de 60 ans</option>
+                  <option value="1">60 ans ou plus (Senior)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Partenaire</label>
+                <select name="Partner">
+                  <option value="Yes">Oui</option>
+                  <option value="No">Non</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Personnes à charge</label>
+                <select name="Dependents">
+                  <option value="No">Non</option>
+                  <option value="Yes">Oui</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="section-title">Ancienneté</div>
+            <div class="fields-grid">
+              <div class="field" style="grid-column: 1 / -1;">
+                <label>
+                  Durée d'abonnement —
+                  <span id="tenureVal" style="color:var(--primary);font-weight:700;">12</span> mois
+                </label>
+                <input type="range" id="tenureRange" min="0" max="72" value="12"
+                  oninput="syncTenure(this.value,'range')" />
+              </div>
+              <div class="field">
+                <label>Valeur exacte (mois)</label>
+                <input type="number" id="tenureNum" value="12" min="0" max="120"
+                  oninput="syncTenure(this.value,'num')" />
+              </div>
+            </div>
+
+            <div class="nav-btns">
+              <div></div>
+              <button type="button" class="btn btn-primary" onclick="goToStep(2)">Services →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── STEP 2 ── -->
+        <div class="form-section" id="section-2">
+          <div class="card-header">
+            <div class="card-icon icon-blue">📡</div>
+            <div>
+              <div class="card-title">Services Souscrits</div>
+              <div class="card-subtitle">Téléphonie, Internet et options</div>
+            </div>
+          </div>
+          <div class="card-body">
+
+            <div class="section-title">Téléphonie</div>
+            <div class="fields-grid">
+              <div class="field">
+                <label>Service Téléphonique</label>
+                <select name="PhoneService" onchange="togglePhone(this.value)">
+                  <option value="Yes">Actif</option>
+                  <option value="No">Inactif</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Lignes Multiples</label>
+                <select name="MultipleLines" id="multiLines">
+                  <option value="No">Non</option>
+                  <option value="Yes">Oui</option>
+                  <option value="No phone service">Sans service tél.</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="section-title">Internet & Options</div>
+            <div class="fields-grid">
+              <div class="field">
+                <label>Type d'Internet</label>
+                <select name="InternetService" onchange="toggleInternet(this.value)">
+                  <option value="DSL">DSL</option>
+                  <option value="Fiber optic">Fibre Optique</option>
+                  <option value="No">Aucun</option>
+                </select>
+              </div>
+              <div class="field" id="fSecure">
+                <label>Sécurité En Ligne</label>
+                <select name="OnlineSecurity">
+                  <option value="No">Non</option>
+                  <option value="Yes">Oui</option>
+                  <option value="No internet service">Sans internet</option>
+                </select>
+              </div>
+              <div class="field" id="fBackup">
+                <label>Sauvegarde En Ligne</label>
+                <select name="OnlineBackup">
+                  <option value="No">Non</option>
+                  <option value="Yes">Oui</option>
+                  <option value="No internet service">Sans internet</option>
+                </select>
+              </div>
+              <div class="field" id="fDevice">
+                <label>Protection Appareil</label>
+                <select name="DeviceProtection">
+                  <option value="No">Non</option>
+                  <option value="Yes">Oui</option>
+                  <option value="No internet service">Sans internet</option>
+                </select>
+              </div>
+              <div class="field" id="fTech">
+                <label>Support Technique</label>
+                <select name="TechSupport">
+                  <option value="No">Non</option>
+                  <option value="Yes">Oui</option>
+                  <option value="No internet service">Sans internet</option>
+                </select>
+              </div>
+              <div class="field" id="fTV">
+                <label>Streaming TV</label>
+                <select name="StreamingTV">
+                  <option value="No">Non</option>
+                  <option value="Yes">Oui</option>
+                  <option value="No internet service">Sans internet</option>
+                </select>
+              </div>
+              <div class="field" id="fMovies">
+                <label>Streaming Films</label>
+                <select name="StreamingMovies">
+                  <option value="No">Non</option>
+                  <option value="Yes">Oui</option>
+                  <option value="No internet service">Sans internet</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="nav-btns">
+              <button type="button" class="btn btn-ghost" onclick="goToStep(1)">← Retour</button>
+              <button type="button" class="btn btn-primary" onclick="goToStep(3)">Contrat →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── STEP 3 ── -->
+        <div class="form-section" id="section-3">
+          <div class="card-header">
+            <div class="card-icon icon-orange">💳</div>
+            <div>
+              <div class="card-title">Contrat & Facturation</div>
+              <div class="card-subtitle">Type de contrat et informations financières</div>
+            </div>
+          </div>
+          <div class="card-body">
+
+            <div class="section-title">Contrat</div>
+            <div class="fields-grid">
+              <div class="field">
+                <label>Durée du Contrat</label>
+                <select name="Contract">
+                  <option value="Month-to-month">Mensuel</option>
+                  <option value="One year">Un an</option>
+                  <option value="Two year">Deux ans</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Facturation Sans Papier</label>
+                <select name="PaperlessBilling">
+                  <option value="Yes">Oui</option>
+                  <option value="No">Non</option>
+                </select>
+              </div>
+              <div class="field" style="grid-column: 1 / -1;">
+                <label>Mode de Paiement</label>
+                <select name="PaymentMethod">
+                  <option value="Electronic check">Chèque électronique</option>
+                  <option value="Mailed check">Chèque postal</option>
+                  <option value="Bank transfer (automatic)">Virement bancaire (auto)</option>
+                  <option value="Credit card (automatic)">Carte de crédit (auto)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="section-title">Montants</div>
+            <div class="fields-grid">
+              <div class="field">
+                <label>Charges Mensuelles ($)</label>
+                <input type="number" name="MonthlyCharges" value="65.00" step="0.01" min="0" max="9999" />
+              </div>
+              <div class="field">
+                <label>Charges Totales ($)</label>
+                <input type="number" name="TotalCharges" value="780.00" step="0.01" min="0" />
+              </div>
+            </div>
+
+            <div class="nav-btns">
+              <button type="button" class="btn btn-ghost" onclick="goToStep(2)">← Retour</button>
+              <button type="submit" class="btn btn-predict" id="submitBtn">
+                🔮 Analyser le Risque
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+    <div class="progress-dots">
+      <div class="dot active" id="dot-1"></div>
+      <div class="dot" id="dot-2"></div>
+      <div class="dot" id="dot-3"></div>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT — SIDEBAR ══ -->
+  <div class="sidebar">
+
+    <!-- Result -->
+    <div class="card" id="resultCard">
+      <div class="card-header">
+        <div class="card-icon icon-green">📊</div>
+        <div>
+          <div class="card-title">Résultat de l'analyse</div>
+          <div class="card-subtitle" id="resultTime">—</div>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="spinner-wrap" id="spinnerWrap">
+          <div class="spinner"></div>
+          <div class="spinner-text">Analyse en cours...</div>
+        </div>
+
+        <div id="resultContent" style="display:none;">
+
+          <div class="result-banner" id="resultBanner">
+            <div class="result-icon" id="resultIcon"></div>
+            <div class="result-verdict" id="resultVerdict"></div>
+            <div class="result-desc" id="resultDesc"></div>
+          </div>
+
+          <div class="risk-meter">
+            <div class="risk-label">Jauge de risque</div>
+            <div class="risk-bar-container">
+              <div class="risk-track"></div>
+              <div class="risk-pointer" id="riskPointer" style="left:0%"></div>
+            </div>
+            <div class="risk-levels">
+              <span>Faible</span>
+              <span>Modéré</span>
+              <span>Élevé</span>
+            </div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <div class="prob-item">
+              <div class="prob-header">
+                <span class="prob-label">Risque de résiliation</span>
+                <span class="prob-value danger" id="pctChurn">—</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill bar-danger" id="barChurn"></div></div>
+            </div>
+            <div class="prob-item">
+              <div class="prob-header">
+                <span class="prob-label">Probabilité de fidélité</span>
+                <span class="prob-value success" id="pctNoChurn">—</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill bar-success" id="barNoChurn"></div></div>
+            </div>
+          </div>
+
+          <div id="errorBox"></div>
+
+          <button type="button" class="btn btn-ghost"
+            style="width:100%;justify-content:center;"
+            onclick="resetForm()">↺ Nouvelle analyse</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon icon-blue">🕑</div>
+        <div style="flex:1;">
+          <div class="card-title">Historique</div>
+          <div class="card-subtitle" id="historyCount">Session en cours</div>
+        </div>
+        <button type="button" class="btn-export" id="exportBtn" onclick="exportCSV()" disabled>
+          ⬇ CSV
+        </button>
+      </div>
+      <div class="card-body" style="padding:16px;">
+        <div class="history-list" id="historyList">
+          <div class="empty-history">Aucune prédiction effectuée</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="info-card">
+      <div class="info-card-title">À propos du modèle</div>
+      <p>
+        <strong style="color:var(--text);">Random Forest</strong> — dataset Telco Customer Churn.<br />
+        Accuracy : <strong style="color:#a5b4fc;">79.6%</strong> &nbsp;|&nbsp;
+        ROC-AUC : <strong style="color:#a5b4fc;">83.6%</strong>
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let currentStep = 1;
+  const predictions = [];
+
+  // ── Tenure sync ──
+  function syncTenure(val, from) {
+    document.getElementById('tenureVal').textContent = val;
+    if (from === 'range') document.getElementById('tenureNum').value = val;
+    else document.getElementById('tenureRange').value = Math.min(val, 72);
+  }
+
+  // ── Step navigation ──
+  function goToStep(n) {
+    document.getElementById(`section-${currentStep}`).classList.remove('active');
+    const prevTab = document.getElementById(`step-tab-${currentStep}`);
+    const prevDot = document.getElementById(`dot-${currentStep}`);
+    prevTab.classList.remove('active');
+    prevDot.classList.remove('active');
+    if (n > currentStep) { prevTab.classList.add('done'); prevDot.classList.add('done'); }
+
+    currentStep = n;
+    document.getElementById(`section-${n}`).classList.add('active');
+    document.getElementById(`step-tab-${n}`).classList.add('active');
+    document.getElementById(`dot-${n}`).classList.add('active');
+  }
+
+  // ── Dynamic: phone ──
+  function togglePhone(val) {
+    const sel = document.getElementById('multiLines');
+    if (val === 'No') { sel.value = 'No phone service'; sel.disabled = true; }
+    else { sel.disabled = false; if (sel.value === 'No phone service') sel.value = 'No'; }
+  }
+
+  // ── Dynamic: internet ──
+  function toggleInternet(val) {
+    const ids = ['fSecure','fBackup','fDevice','fTech','fTV','fMovies'];
+    ids.forEach(id => {
+      const wrap = document.getElementById(id);
+      const sel = wrap.querySelector('select');
+      if (val === 'No') {
+        wrap.style.opacity = '0.4';
+        sel.value = 'No internet service';
+        sel.disabled = true;
+      } else {
+        wrap.style.opacity = '1';
+        sel.disabled = false;
+        if (sel.value === 'No internet service') sel.value = 'No';
+      }
+    });
+  }
+
+  // ── API health ──
+  async function checkStatus() {
+    const el = document.getElementById('modelStatus');
+    try {
+      const r = await fetch('/', { signal: AbortSignal.timeout(4000) });
+      if (r.ok) el.innerHTML = `<span class="status-dot dot-green"></span><span>Modèle prêt</span>`;
+      else throw new Error();
+    } catch {
+      el.innerHTML = `<span class="status-dot dot-red"></span><span>API hors ligne</span>`;
+    }
+  }
+
+  // ── Submit ──
+  document.getElementById('predictForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const btn     = document.getElementById('submitBtn');
+    const resCard = document.getElementById('resultCard');
+    const spinner = document.getElementById('spinnerWrap');
+    const content = document.getElementById('resultContent');
+
+    btn.disabled = true;
+    resCard.style.display = 'block';
+    spinner.style.display = 'flex';
+    content.style.display = 'none';
+    document.getElementById('errorBox').innerHTML = '';
+
+    if (window.innerWidth < 900) resCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const tenure = parseInt(document.getElementById('tenureNum').value) || 12;
+    const form   = e.target;
+
+    const payload = {
+      gender:           form.gender.value,
+      SeniorCitizen:    parseInt(form.SeniorCitizen.value),
+      Partner:          form.Partner.value,
+      Dependents:       form.Dependents.value,
+      tenure:           tenure,
+      PhoneService:     form.PhoneService.value,
+      MultipleLines:    form.MultipleLines.value,
+      InternetService:  form.InternetService.value,
+      OnlineSecurity:   form.OnlineSecurity.value,
+      OnlineBackup:     form.OnlineBackup.value,
+      DeviceProtection: form.DeviceProtection.value,
+      TechSupport:      form.TechSupport.value,
+      StreamingTV:      form.StreamingTV.value,
+      StreamingMovies:  form.StreamingMovies.value,
+      Contract:         form.Contract.value,
+      PaperlessBilling: form.PaperlessBilling.value,
+      PaymentMethod:    form.PaymentMethod.value,
+      MonthlyCharges:   parseFloat(form.MonthlyCharges.value),
+      TotalCharges:     parseFloat(form.TotalCharges.value),
+    };
+
+    try {
+      const resp = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      spinner.style.display = 'none';
+      content.style.display = 'block';
+
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.detail || `Erreur HTTP ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      renderResult(data, payload);
+
+    } catch (err) {
+      spinner.style.display = 'none';
+      content.style.display = 'block';
+      document.getElementById('errorBox').innerHTML =
+        `<div class="error-box">⚠ ${err.message}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  function renderResult(data, payload) {
+    const isChurn = data.prediction === 1;
+    const pC = (data.probability_churn * 100).toFixed(1);
+    const pN = (data.probability_no_churn * 100).toFixed(1);
+
+    const banner = document.getElementById('resultBanner');
+    banner.className = `result-banner ${isChurn ? 'churn' : 'no-churn'}`;
+
+    document.getElementById('resultIcon').textContent    = isChurn ? '⚠️' : '✅';
+    document.getElementById('resultVerdict').className   = `result-verdict ${isChurn ? 'churn' : 'no-churn'}`;
+    document.getElementById('resultVerdict').textContent = isChurn ? 'Risque de Résiliation' : 'Client Fidèle';
+    document.getElementById('resultDesc').textContent    = isChurn
+      ? `Risque élevé de départ (${pC}%). Intervention recommandée.`
+      : `Ce client a ${pN}% de chances de rester. Profil stable.`;
+
+    document.getElementById('riskPointer').style.left = `${data.probability_churn * 100}%`;
+
+    document.getElementById('pctChurn').textContent   = `${pC}%`;
+    document.getElementById('pctNoChurn').textContent = `${pN}%`;
+
+    setTimeout(() => {
+      document.getElementById('barChurn').style.width   = `${pC}%`;
+      document.getElementById('barNoChurn').style.width = `${pN}%`;
+    }, 60);
+
+    document.getElementById('resultTime').textContent = new Date().toLocaleTimeString('fr-FR');
+
+    predictions.unshift({
+      isChurn, pC, pN,
+      time: new Date().toLocaleTimeString('fr-FR'),
+      date: new Date().toLocaleDateString('fr-FR'),
+      payload
+    });
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const list  = document.getElementById('historyList');
+    const count = document.getElementById('historyCount');
+    const btn   = document.getElementById('exportBtn');
+
+    if (!predictions.length) {
+      list.innerHTML = '<div class="empty-history">Aucune prédiction effectuée</div>';
+      count.textContent = 'Session en cours';
+      btn.disabled = true;
+      return;
+    }
+
+    count.textContent = `${predictions.length} prédiction${predictions.length > 1 ? 's' : ''}`;
+    btn.disabled = false;
+
+    list.innerHTML = predictions.slice(0, 8).map((h, i) => `
+      <div class="history-item">
+        <div class="history-info">
+          <div class="history-pred ${h.isChurn ? 'churn' : 'no-churn'}">
+            ${h.isChurn ? '⚠ Résiliation' : '✓ Fidèle'}
+          </div>
+          <div class="history-time">${h.time} — ${h.payload.Contract}</div>
+        </div>
+        <div class="history-prob ${h.isChurn ? 'churn' : 'no-churn'}">
+          ${h.isChurn ? h.pC : h.pN}%
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function exportCSV() {
+    if (!predictions.length) return;
+
+    const headers = [
+      'Date','Heure','Prediction','Proba_Churn_%','Proba_Fidelite_%',
+      'gender','SeniorCitizen','Partner','Dependents','tenure',
+      'PhoneService','MultipleLines','InternetService',
+      'OnlineSecurity','OnlineBackup','DeviceProtection','TechSupport',
+      'StreamingTV','StreamingMovies','Contract','PaperlessBilling',
+      'PaymentMethod','MonthlyCharges','TotalCharges'
+    ];
+
+    const rows = predictions.map(h => {
+      const p = h.payload;
+      return [
+        h.date, h.time,
+        h.isChurn ? 'Churn' : 'No Churn',
+        h.pC, h.pN,
+        p.gender, p.SeniorCitizen, p.Partner, p.Dependents, p.tenure,
+        p.PhoneService, p.MultipleLines, p.InternetService,
+        p.OnlineSecurity, p.OnlineBackup, p.DeviceProtection, p.TechSupport,
+        p.StreamingTV, p.StreamingMovies, p.Contract, p.PaperlessBilling,
+        `"${p.PaymentMethod}"`, p.MonthlyCharges, p.TotalCharges
+      ].join(',');
+    });
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `churnai_predictions_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function resetForm() {
+    document.getElementById('resultCard').style.display = 'none';
+    document.querySelectorAll('.dot').forEach(d => d.classList.remove('done', 'active'));
+    document.getElementById('dot-1').classList.add('active');
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('done', 'active'));
+    document.getElementById('step-tab-1').classList.add('active');
+    document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('section-1').classList.add('active');
+    currentStep = 1;
+  }
+
+  checkStatus();
+</script>
+</body>
+</html>

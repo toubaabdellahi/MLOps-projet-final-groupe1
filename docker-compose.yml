@@ -1,0 +1,14 @@
+services:
+  churn-api:
+    build: .
+    container_name: churn-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI:-http://15.224.61.131:5000}
+      - MLFLOW_MODEL_NAME=${MLFLOW_MODEL_NAME:-churn-prediction-model}
+      - MLFLOW_MODEL_STAGE=${MLFLOW_MODEL_STAGE:-Production}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-eu-west-3}
+    restart: unless-stopped
